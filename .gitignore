@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.local
+
+# Build outputs
+frontend/.next/
+frontend/out/
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+ai-model/.venv/
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Uploads & temp
+uploads/
+tmp/
+*.tmp
+ai-model/_temp_ocr.png
+
+# Local test scripts (use GROQ_API_KEY from .env)
+ai-model/test_groq*.py
