@@ -10,6 +10,7 @@ import MedicineScanner from '@/components/features/MedicineScanner';
 import AdherenceCoach from '@/components/features/AdherenceCoach';
 import AppointmentBooking from '@/components/features/AppointmentBooking';
 import io from 'socket.io-client';
+import { API_BASE } from '@/lib/api';
 import { 
   Stethoscope, Activity, FileText, Zap, Brain, Upload,
   ShieldCheck, CheckCircle2, AlertTriangle, Loader2, X,
@@ -67,7 +68,7 @@ function PatientDashboardInner() {
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : {};
     if (!user.id) return;
-    const socket = io('http://localhost:5000');
+    const socket = io(API_BASE);
     socket.emit('join_patient', user.id);
     socket.on('prescription_disease_alert', (data: any) => {
       setNotification(data);
@@ -79,8 +80,8 @@ function PatientDashboardInner() {
   const fetchDoctors = async () => {
     try {
       const url = specialization
-        ? `http://localhost:5000/api/users/doctors?specialization=${specialization}`
-        : 'http://localhost:5000/api/users/doctors';
+        ? `${API_BASE}/api/users/doctors?specialization=${specialization}`
+        : `${API_BASE}/api/users/doctors`;
       const data = await (await fetch(url)).json();
       setDoctors(data);
     } catch (err) { console.error(err); }
@@ -92,7 +93,7 @@ function PatientDashboardInner() {
     setResult(null);
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const res = await fetch('http://localhost:5000/api/ai/analyze', {
+      const res = await fetch(`${API_BASE}/api/ai/analyze`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           symptoms,
@@ -114,7 +115,7 @@ function PatientDashboardInner() {
         predictions: data.predictions || [],
         source: 'symptoms',
       });
-      const ob = await (await fetch('http://localhost:5000/api/ai/detect-outbreaks', {
+      const ob = await (await fetch(`${API_BASE}/api/ai/detect-outbreaks`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ city: 'Mumbai', symptoms: data.symptoms_extracted })
       })).json();
@@ -138,7 +139,7 @@ function PatientDashboardInner() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      const res = await fetch('http://localhost:5000/api/ai/ocr', {
+      const res = await fetch(`${API_BASE}/api/ai/ocr`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: base64,
@@ -168,7 +169,7 @@ function PatientDashboardInner() {
       } else if (data.drugs_found?.length > 0 || data.medications?.length > 0) {
         setInferLoading(true);
         try {
-          const infer = await fetch('http://localhost:5000/api/ai/infer-disease-from-prescription', {
+          const infer = await fetch(`${API_BASE}/api/ai/infer-disease-from-prescription`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               drugs_found: data.drugs_found || [],
@@ -193,7 +194,7 @@ function PatientDashboardInner() {
   const checkInteractions = async (newDrugs: string[]) => {
     setDdiLoading(true);
     try {
-      const data = await (await fetch('http://localhost:5000/api/ai/check-interaction', {
+      const data = await (await fetch(`${API_BASE}/api/ai/check-interaction`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_drugs: newDrugs, existing_meds: ['Aspirin', 'Metformin'] })
       })).json();

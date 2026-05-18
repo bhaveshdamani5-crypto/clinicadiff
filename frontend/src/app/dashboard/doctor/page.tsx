@@ -24,6 +24,7 @@ import {
   X
 } from 'lucide-react';
 import io from 'socket.io-client';
+import { API_BASE } from '@/lib/api';
 import DoctorCopilotPanel from '@/components/features/DoctorCopilotPanel';
 import DoctorCaseCollaboration from '@/components/features/DoctorCaseCollaboration';
 
@@ -49,14 +50,14 @@ export default function DoctorDashboard() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (!user.id) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/appointments/doctor/${user.id}`);
+      const res = await fetch(`${API_BASE}/api/appointments/doctor/${user.id}`);
       const data = await res.json();
       if (res.ok) setAppointments(data);
     } catch (e) { console.error(e); }
   };
 
   const updateAppointmentStatus = async (id: string, status: string) => {
-    await fetch(`http://localhost:5000/api/appointments/${id}/status`, {
+    await fetch(`${API_BASE}/api/appointments/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
@@ -66,7 +67,7 @@ export default function DoctorDashboard() {
 
   const openCaseDiscussion = async (consultationId: string) => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`http://localhost:5000/api/cases/from-consultation/${consultationId}`, {
+    const res = await fetch(`${API_BASE}/api/cases/from-consultation/${consultationId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ doctorId: user.id }),
@@ -84,7 +85,7 @@ export default function DoctorDashboard() {
     
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : {};
-    const socket = io('http://localhost:5000');
+    const socket = io(API_BASE);
     if (user.id) {
       socket.emit('join_doctor', user.id);
       socket.on('new_patient_submission', () => {
@@ -111,11 +112,11 @@ export default function DoctorDashboard() {
       if (priorityFilter) params.append('priority', priorityFilter);
       if (search) params.append('search', search);
 
-      const res = await fetch(`http://localhost:5000/api/consultations/doctor/${user.id}?${params.toString()}`);
+      const res = await fetch(`${API_BASE}/api/consultations/doctor/${user.id}?${params.toString()}`);
       const data = await res.json();
       setConsultations(data);
       
-      const allRes = await fetch(`http://localhost:5000/api/consultations/doctor/${user.id}`);
+      const allRes = await fetch(`${API_BASE}/api/consultations/doctor/${user.id}`);
       const allData = await allRes.json();
       setStats({
         pending: allData.filter((c: any) => c.status === 'pending').length,
@@ -132,7 +133,7 @@ export default function DoctorDashboard() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await fetch(`http://localhost:5000/api/consultations/${id}/status`, {
+      await fetch(`${API_BASE}/api/consultations/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -147,7 +148,7 @@ export default function DoctorDashboard() {
     e.preventDefault();
     setAnalyzerLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/ai/analyze', {
+      const res = await fetch(`${API_BASE}/api/ai/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symptoms: analyzerSymptoms })

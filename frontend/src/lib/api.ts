@@ -1,4 +1,4 @@
-export const API_BASE = 'http://localhost:5000';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export async function apiPost<T = unknown>(path: string, body: unknown): Promise<{ data: T; ok: boolean }> {
   const res = await fetch(`${API_BASE}${path}`, {

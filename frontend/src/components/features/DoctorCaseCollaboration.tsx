@@ -44,7 +44,7 @@ export default function DoctorCaseCollaboration() {
       specialization: user.specialization || '',
     });
 
-    const socket = io(API_BASE.replace(/\/$/, '') || 'http://localhost:5000');
+    const socket = io(API_BASE);
     socket.emit('join_doctor', user.id);
     socket.on('case_new_message', (payload: any) => {
       if (selectedCase?._id === payload.caseId) loadCase(payload.caseId);
@@ -55,7 +55,7 @@ export default function DoctorCaseCollaboration() {
 
   useEffect(() => {
     if (selectedCase?._id) {
-      const socket = io(API_BASE.replace(/\/$/, '') || 'http://localhost:5000');
+      const socket = io(API_BASE);
       socket.emit('join_case', selectedCase._id);
       return () => { socket.disconnect(); };
     }
