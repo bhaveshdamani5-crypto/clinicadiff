@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import { 
@@ -18,10 +18,14 @@ import {
   ShieldCheck,
   TrendingUp,
   Radio,
-  Loader2
+  Loader2,
+  Mic,
+  MicOff,
+  X
 } from 'lucide-react';
 import io from 'socket.io-client';
 import DoctorCopilotPanel from '@/components/features/DoctorCopilotPanel';
+import DoctorCaseCollaboration from '@/components/features/DoctorCaseCollaboration';
 
 export default function DoctorDashboard() {
   const [consultations, setConsultations] = useState<any[]>([]);
@@ -30,15 +34,53 @@ export default function DoctorDashboard() {
   const [priorityFilter, setPriorityFilter] = useState('');
   const [search, setSearch] = useState('');
   const [stats, setStats] = useState({ pending: 0, reviewed: 0, completed: 0, highRisk: 0 });
-  const [activeTab, setActiveTab] = useState<'queue' | 'copilot' | 'analyzer' | 'analytics' | 'records'>('copilot');
+  const [activeTab, setActiveTab] = useState<'queue' | 'copilot' | 'collaboration' | 'appointments' | 'analyzer' | 'analytics' | 'records'>('copilot');
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [notification, setNotification] = useState<string | null>(null);
   
   // Symptom Analyzer State (Doctor Side)
   const [analyzerSymptoms, setAnalyzerSymptoms] = useState('');
   const [analyzerLoading, setAnalyzerLoading] = useState(false);
   const [analyzerResult, setAnalyzerResult] = useState<any>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const fetchAppointments = async () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!user.id) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/appointments/doctor/${user.id}`);
+      const data = await res.json();
+      if (res.ok) setAppointments(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const updateAppointmentStatus = async (id: string, status: string) => {
+    await fetch(`http://localhost:5000/api/appointments/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    fetchAppointments();
+  };
+
+  const openCaseDiscussion = async (consultationId: string) => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const res = await fetch(`http://localhost:5000/api/cases/from-consultation/${consultationId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctorId: user.id }),
+    });
+    if (res.ok) {
+      setActiveTab('collaboration');
+    } else {
+      alert('Could not open case discussion');
+    }
+  };
 
   useEffect(() => {
     fetchConsultations();
+    fetchAppointments();
     
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : {};
@@ -47,6 +89,11 @@ export default function DoctorDashboard() {
       socket.emit('join_doctor', user.id);
       socket.on('new_patient_submission', () => {
         fetchConsultations();
+      });
+      socket.on('new_appointment_request', (data) => {
+        fetchAppointments();
+        setNotification(`New appointment request from ${data?.patientId?.name || 'a patient'}`);
+        setTimeout(() => setNotification(null), 5000);
       });
     }
     return () => { socket.disconnect(); };
@@ -114,8 +161,82 @@ export default function DoctorDashboard() {
     }
   };
 
+  const toggleRecording = () => {
+    if (isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in your browser. Please use Chrome or Edge.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        }
+      }
+      if (finalTranscript) {
+        setAnalyzerSymptoms(prev => prev + finalTranscript);
+      }
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onerror = (e: any) => {
+      console.error('Speech recognition error:', e.error, e.message);
+      if (e.error === 'not-allowed') {
+        alert("Microphone access was denied. Please allow microphone access in your browser settings to use voice dictation.");
+      } else if (e.error === 'no-speech') {
+        // Just ignore if no speech was detected immediately
+      } else {
+        alert("Voice recognition error: " + e.error + ". Make sure you are using Chrome/Edge and have a working microphone.");
+      }
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
+
   return (
     <DashboardLayout>
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-6 right-6 z-[100] bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-700"
+          >
+            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Incoming Notification</p>
+              <p className="text-sm font-medium">{notification}</p>
+            </div>
+            <button onClick={() => setNotification(null)} className="ml-4 text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="space-y-10 pb-20 max-w-7xl mx-auto relative">
         {/* Ambient Glows */}
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
@@ -141,6 +262,8 @@ export default function DoctorDashboard() {
             {[
               { id: 'copilot', label: 'AI Copilot', icon: Brain },
               { id: 'queue', label: 'Patient Queue', icon: Users },
+              { id: 'collaboration', label: 'Case Board', icon: Users },
+              { id: 'appointments', label: 'Appointments', icon: Calendar },
               { id: 'analyzer', label: 'Symptom Analyzer', icon: Brain },
               { id: 'analytics', label: 'Neural Analytics', icon: Activity },
               { id: 'records', label: 'Bio Records', icon: Zap },
@@ -168,6 +291,40 @@ export default function DoctorDashboard() {
           {activeTab === 'copilot' && (
             <motion.div key="copilot" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <DoctorCopilotPanel />
+            </motion.div>
+          )}
+
+          {activeTab === 'collaboration' && (
+            <motion.div key="collab" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+              <DoctorCaseCollaboration />
+            </motion.div>
+          )}
+
+          {activeTab === 'appointments' && (
+            <motion.div key="appts" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+              <h2 className="text-2xl font-black text-slate-900">Patient Appointments</h2>
+              {appointments.length === 0 ? (
+                <p className="text-slate-500 p-10 bg-white border border-slate-200 rounded-[2rem] text-center">No appointment requests yet</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {appointments.map((a) => (
+                    <div key={a._id} className="p-6 bg-white border border-slate-200 rounded-[2rem] shadow-sm">
+                      <p className="font-black text-slate-900">{a.patientId?.name || 'Patient'}</p>
+                      <p className="text-sm text-slate-500 mt-1">{new Date(a.appointmentDate).toLocaleDateString()} · {a.timeSlot}</p>
+                      <p className="text-sm text-slate-700 mt-3">{a.reason}</p>
+                      <span className="inline-block mt-3 px-3 py-1 rounded-xl text-[9px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-100">{a.status}</span>
+                      {a.status === 'pending' && (
+                        <motion.div className="flex gap-2 mt-4">
+                          <button type="button" onClick={() => updateAppointmentStatus(a._id, 'confirmed')}
+                            className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold">Confirm</button>
+                          <button type="button" onClick={() => updateAppointmentStatus(a._id, 'cancelled')}
+                            className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold">Decline</button>
+                        </motion.div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -326,8 +483,9 @@ export default function DoctorDashboard() {
                               Initialize Eval
                             </motion.button>
                           )}
-                          <button className="p-3 rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-all">
-                            <ChevronRight className="w-4 h-4" />
+                          <button type="button" onClick={() => openCaseDiscussion(c._id)}
+                            className="text-[9px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100">
+                            Discuss Case
                           </button>
                         </div>
                       </div>
@@ -364,9 +522,23 @@ export default function DoctorDashboard() {
                       required
                       value={analyzerSymptoms}
                       onChange={(e) => setAnalyzerSymptoms(e.target.value)}
-                      placeholder="Input clinical observations..."
-                      className="w-full bg-white border border-slate-200 shadow-sm rounded-[2.5rem] p-10 text-slate-900 text-lg placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-400/10 h-64 transition-all resize-none font-medium leading-relaxed"
+                      placeholder="Input or dictate clinical observations..."
+                      className="w-full bg-white border border-slate-200 shadow-sm rounded-[2.5rem] p-10 pr-24 text-slate-900 text-lg placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-400/10 h-64 transition-all resize-none font-medium leading-relaxed"
                     />
+                    
+                    <button
+                      type="button"
+                      onClick={toggleRecording}
+                      className={`absolute right-8 top-8 p-4 rounded-full transition-all duration-300 shadow-lg ${
+                        isRecording 
+                          ? 'bg-red-500 text-white animate-pulse shadow-red-500/30' 
+                          : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'
+                      }`}
+                      title="Dictate observations"
+                    >
+                      {isRecording ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+                    </button>
+
                     <div className="absolute bottom-8 right-10 flex items-center gap-3">
                       <Waves className="w-4 h-4 text-blue-500 animate-pulse" />
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em]">Biometric Sync Active</span>

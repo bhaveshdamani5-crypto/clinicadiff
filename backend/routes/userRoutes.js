@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getPatients, getDoctors } = require('../controllers/userController');
+const { getPatients, getDoctors, getDoctorById, updateProfile } = require('../controllers/userController');
 
-// In a real app, you'd add a middleware here to verify JWT
 router.get('/patients', getPatients);
 router.get('/doctors', getDoctors);
+router.get('/doctors/:id', getDoctorById);
+router.patch('/profile', updateProfile);
 
 module.exports = router;

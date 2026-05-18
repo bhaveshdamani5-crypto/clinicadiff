@@ -6,8 +6,11 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['doctor', 'patient'], default: 'patient' },
-    specialization: { type: String }, // For doctors
-    history: { type: Array, default: [] } // For patients
+    specialization: { type: String },
+    hospital: { type: String },
+    bio: { type: String },
+    licenseId: { type: String },
+    history: { type: Array, default: [] }
 }, { timestamps: true });
 
 // Hash password before saving

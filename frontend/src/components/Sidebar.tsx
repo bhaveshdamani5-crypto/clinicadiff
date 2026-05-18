@@ -1,13 +1,14 @@
 "use client";
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import { LayoutDashboard, LogOut, Calendar } from 'lucide-react';
 
 interface SidebarProps { role: 'doctor' | 'patient'; }
 
 export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const doctorLinks = [
     { name: 'Command Center', href: '/dashboard/doctor', icon: LayoutDashboard },
@@ -15,6 +16,7 @@ export default function Sidebar({ role }: SidebarProps) {
 
   const patientLinks = [
     { name: 'Health Hub', href: '/dashboard/patient', icon: LayoutDashboard },
+    { name: 'Book Appointment', href: '/dashboard/patient?tab=appointments', icon: Calendar },
   ];
 
   const links = role === 'doctor' ? doctorLinks : patientLinks;
@@ -27,11 +29,11 @@ export default function Sidebar({ role }: SidebarProps) {
       <div className="absolute -bottom-20 -left-10 w-40 h-40 bg-cyan-400/10 blur-[80px] rounded-full pointer-events-none" />
 
       <div className="mb-12 flex flex-col items-center text-center relative z-10">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="w-20 h-20 rounded-3xl overflow-hidden shadow-lg shadow-blue-500/10 border border-slate-200 mb-4 bg-white flex justify-center items-center"
-        >
-          <img src="/logo.png" alt="Clinica.Diff" className="w-12 h-12 object-contain mix-blend-multiply" />
+        <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-3 mb-2">
+          <img src="/logo.png" alt="ClinicaDiff" className="w-10 h-10 object-contain drop-shadow-sm" />
+          <p className="text-2xl font-black tracking-tighter text-slate-900 leading-none">
+            Clinica<span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Diff</span>
+          </p>
         </motion.div>
         <p className="text-[9px] font-bold text-blue-600 uppercase tracking-[0.4em] ml-1">Clinical Intelligence</p>
       </div>
@@ -40,7 +42,16 @@ export default function Sidebar({ role }: SidebarProps) {
       <nav className="flex-1 space-y-1 relative z-10">
         <p className="text-[9px] font-bold text-slate-400 mb-4 ml-4 uppercase tracking-[0.2em]">Navigation</p>
         {links.map((link, i) => {
-          const isActive = pathname === link.href;
+          const isAppointmentsLink = link.href.includes('tab=appointments');
+          const isTabAppointments = searchParams?.get('tab') === 'appointments';
+          
+          let isActive = false;
+          if (isAppointmentsLink) {
+            isActive = isTabAppointments;
+          } else {
+            isActive = pathname === link.href && !isTabAppointments;
+          }
+
           return (
             <Link key={link.name} href={link.href}>
               <motion.div

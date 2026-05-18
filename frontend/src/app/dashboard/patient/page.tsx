@@ -1,26 +1,30 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ClinicalProvider, useClinical } from '@/context/ClinicalContext';
 import VoiceSymptomInput from '@/components/features/VoiceSymptomInput';
 import MultimodalDiagnosis from '@/components/features/MultimodalDiagnosis';
 import MedicineScanner from '@/components/features/MedicineScanner';
 import AdherenceCoach from '@/components/features/AdherenceCoach';
+import AppointmentBooking from '@/components/features/AppointmentBooking';
 import io from 'socket.io-client';
 import { 
   Stethoscope, Activity, FileText, Zap, Brain, Upload,
   ShieldCheck, CheckCircle2, AlertTriangle, Loader2, X,
   Radio, Waves, Target, TrendingUp, ChevronRight,
-  HeartPulse, FlaskConical, Bell, LayoutGrid, Camera, Scan, Mic, Users
+  HeartPulse, FlaskConical, Bell, LayoutGrid, Camera, Scan, Mic, Users, Calendar
 } from 'lucide-react';
 
-type PatientTab = 'hub' | 'symptoms' | 'multimodal' | 'prescription' | 'scanner' | 'adherence';
+type PatientTab = 'hub' | 'symptoms' | 'multimodal' | 'prescription' | 'scanner' | 'adherence' | 'appointments';
 
 export default function PatientDashboard() {
   return (
     <ClinicalProvider>
-      <PatientDashboardInner />
+      <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>}>
+        <PatientDashboardInner />
+      </Suspense>
     </ClinicalProvider>
   );
 }
@@ -35,7 +39,16 @@ function PatientDashboardInner() {
   const [symptomDays, setSymptomDays] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<PatientTab>('hub');
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as PatientTab | null;
+  const [activeTab, setActiveTab] = useState<PatientTab>(tabParam || 'hub');
+
+  useEffect(() => {
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const [outbreak, setOutbreak] = useState<any>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -86,6 +99,7 @@ function PatientDashboardInner() {
           age: patientAge || undefined,
           duration_days: symptomDays || undefined,
           doctorId: selectedDoctor,
+          patientId: user.id,
           patientName: user.name,
         }),
       });
@@ -126,7 +140,12 @@ function PatientDashboardInner() {
       });
       const res = await fetch('http://localhost:5000/api/ai/ocr', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64 })
+        body: JSON.stringify({
+          image: base64,
+          doctorId: selectedDoctor,
+          patientId: user.id,
+          patientName: user.name,
+        })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -195,7 +214,7 @@ function PatientDashboardInner() {
     { id: 'multimodal' as PatientTab, title: 'Multimodal Diagnosis', desc: 'Upload rash, wound, or skin photo + symptoms', icon: Camera },
     { id: 'prescription' as PatientTab, title: 'Prescription AI', desc: 'Groq Vision reads handwritten Rx', icon: FileText },
     { id: 'scanner' as PatientTab, title: 'AR Medicine Scanner', desc: 'Scan any medicine box or strip', icon: Scan },
-    { id: 'adherence' as PatientTab, title: 'Adherence Coach', desc: 'Daily dose reminders & streak tracking', icon: Bell },
+    { id: 'adherence' as PatientTab, title: 'Adherence Coach', desc: 'Daily dose reminders & streak tracking', icon: Bell }
   ];
 
   return (
@@ -216,7 +235,7 @@ function PatientDashboardInner() {
             </h1>
           </div>
 
-          <motion.div className="bg-white/80 backdrop-blur-xl p-2 rounded-3xl border border-slate-200/60 flex gap-1 shadow-lg shadow-blue-500/5 flex-wrap">
+          <motion.div className="bg-white/80 backdrop-blur-xl p-2 rounded-3xl border border-slate-200/60 flex gap-1 shadow-lg shadow-blue-500/5 flex-nowrap overflow-x-auto scrollbar-hide w-full md:w-auto">
             {featureTabs.map(t => (
               <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all duration-300 relative overflow-hidden group ${
@@ -267,6 +286,18 @@ function PatientDashboardInner() {
               {activeTab === 'adherence' && (
                 <motion.div key="ad" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
                   <AdherenceCoach medications={ocrResult?.medications} selectedDoctor={selectedDoctor} />
+                </motion.div>
+              )}
+
+              {activeTab === 'appointments' && (
+                <motion.div key="appt" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                  <AppointmentBooking
+                    doctors={doctors}
+                    selectedDoctor={selectedDoctor}
+                    onSelectDoctor={setSelectedDoctor}
+                    specialization={specialization}
+                    onSpecializationChange={setSpecialization}
+                  />
                 </motion.div>
               )}
 
@@ -861,7 +892,7 @@ function PatientDashboardInner() {
             </AnimatePresence>
           </div>
 
-          {!['hub', 'multimodal', 'scanner', 'adherence'].includes(activeTab) && (
+          {!['hub', 'multimodal', 'scanner', 'adherence', 'appointments'].includes(activeTab) && (
           <div className="lg:col-span-4 space-y-8">
             {/* ── NEURAL CORE OS SIDEBAR ── */}
             <div className="bg-white/80 backdrop-blur-md border border-slate-200 shadow-xl p-10 rounded-[3rem] relative overflow-hidden group min-h-[500px] flex flex-col">

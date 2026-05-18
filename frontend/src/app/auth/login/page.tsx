@@ -58,10 +58,11 @@ export default function Login() {
           </div>
           
           <div className="relative z-10">
-            <div className="flex flex-col items-start gap-4 mb-12">
-              <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-lg shadow-blue-500/10 border border-slate-200 bg-white flex items-center justify-center">
-                <img src="/logo.png" alt="Clinica.Diff" className="w-12 h-12 object-contain mix-blend-multiply" />
-              </div>
+            <div className="flex items-center gap-4 mb-10">
+              <img src="/logo.png" alt="ClinicaDiff" className="w-16 h-16 object-contain drop-shadow-md hover:scale-105 transition-transform duration-300" />
+              <p className="text-3xl font-black tracking-tighter text-slate-900 leading-none">
+                Clinica<span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Diff</span>
+              </p>
             </div>
             
             <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight mb-8">
@@ -72,7 +73,7 @@ export default function Login() {
               {[
                 { label: 'Neural Diagnostics', icon: Radio },
                 { label: 'Biometric Triage', icon: Fingerprint },
-                { label: 'Genetic Link Map', icon: ShieldCheck }
+                { label: 'Voice AI Copilot', icon: ShieldCheck }
               ].map((item, i) => (
                 <motion.div 
                   initial={{ opacity: 0, x: -20 }}

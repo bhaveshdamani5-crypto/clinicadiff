@@ -60,25 +60,26 @@ export default function Register() {
           </div>
           
           <div className="relative z-10">
-            <div className="flex flex-col items-start gap-4 mb-10">
-              <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-lg shadow-blue-500/10 border border-slate-200 bg-white flex items-center justify-center">
-                <img src="/logo.png" alt="Clinica.Diff" className="w-12 h-12 object-contain mix-blend-multiply" />
-              </div>
+            <div className="flex items-center gap-4 mb-10">
+              <img src="/logo.png" alt="ClinicaDiff" className="w-16 h-16 object-contain drop-shadow-md hover:scale-105 transition-transform duration-300" />
+              <p className="text-3xl font-black tracking-tighter text-slate-900 leading-none">
+                Clinica<span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Diff</span>
+              </p>
             </div>
             
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-6">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight mb-8">
               Join the future of <br /> <span className="text-blue-600 font-light">Medical OS.</span>
             </h1>
             
             <p className="text-slate-500 text-sm mb-12 max-w-sm leading-relaxed font-medium">
-              Experience a unified ecosystem for clinical intelligence, genetic mapping, and diagnostic accuracy.
+              Experience a unified ecosystem for clinical intelligence, hands-free dictation, and diagnostic accuracy.
             </p>
 
             <div className="grid grid-cols-1 gap-4">
               {[
                 { title: 'Neural Diagnostics', desc: 'Symptom analysis powered by LLMs', icon: Brain },
                 { title: 'Smart Ingestion', desc: 'Neural OCR for medical records', icon: Zap },
-                { title: 'Genetic Map', desc: 'Predictive hereditary profiling', icon: Dna },
+                { title: 'Voice AI Copilot', desc: 'Hands-free clinical dictation', icon: Stethoscope },
               ].map((f, i) => (
                 <motion.div 
                   initial={{ opacity: 0, x: -20 }}

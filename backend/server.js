@@ -9,6 +9,9 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const consultationRoutes = require('./routes/consultationRoutes');
 const adherenceRoutes = require('./routes/adherenceRoutes');
+const copilotRoutes = require('./routes/copilotRoutes');
+const caseRoutes = require('./routes/caseRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
 const aiRoutes = require('./routes');
 
 const app = express();
@@ -46,6 +49,11 @@ io.on('connection', (socket) => {
         console.log(`🤒 Patient ${patientId} joined room`);
     });
 
+    socket.on('join_case', (caseId) => {
+        socket.join(`case_${caseId}`);
+        console.log(`📋 Joined case room ${caseId}`);
+    });
+
     socket.on('disconnect', () => {
         console.log(`❌ Client disconnected: ${socket.id}`);
     });
@@ -56,6 +64,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/adherence', adherenceRoutes);
+app.use('/api/copilot', copilotRoutes);
+app.use('/api/cases', caseRoutes);
+app.use('/api/appointments', appointmentRoutes);
 app.use('/api/ai', aiRoutes);
 
 app.get('/', (req, res) => {

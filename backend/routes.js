@@ -2,34 +2,9 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const Consultation = require('./models/Consultation');
+const { saveAndEmitBrief } = require('./controllers/copilotController');
 
 const AI_BASE = 'http://127.0.0.1:5001';
-
-async function emitCopilotBrief(req, payload) {
-    const io = req.app.get('io');
-    if (!io || !payload.doctorId) return;
-    try {
-        const briefRes = await axios.post(`${AI_BASE}/doctor-copilot-brief`, {
-            patientName: payload.patientName,
-            type: payload.type || 'symptom',
-            symptoms: payload.symptoms,
-            predictions: payload.predictions,
-            medications: payload.medications,
-            diagnosis: payload.diagnosis,
-            visual_findings: payload.visual_findings,
-            urgency_level: payload.urgency_level,
-        }, { timeout: 60000 });
-
-        io.to(`doctor_${payload.doctorId}`).emit('doctor_copilot_brief', {
-            ...briefRes.data,
-            patientId: payload.patientId,
-            analysisType: payload.type,
-            timestamp: new Date().toISOString(),
-        });
-    } catch (e) {
-        console.error('Copilot brief error:', e.message);
-    }
-}
 
 /** Notify assigned doctor: save consultation + realtime socket events */
 async function notifyDoctor(req, payload) {
@@ -53,14 +28,16 @@ async function notifyDoctor(req, payload) {
         visual_findings,
     }).slice(0, 1500);
 
+    let consultationId = null;
     try {
-        await Consultation.create({
+        const consultation = await Consultation.create({
             patientId,
             doctorId,
             symptoms: symptomText,
             aiSuggestion: String(aiSuggestion).slice(0, 500),
             priority,
         });
+        consultationId = consultation._id;
     } catch (e) {
         console.error('Consultation save error:', e.message);
     }
@@ -88,7 +65,7 @@ async function notifyDoctor(req, payload) {
         });
     }
 
-    await emitCopilotBrief(req, {
+    await saveAndEmitBrief(req, {
         doctorId,
         patientId,
         patientName,
@@ -99,6 +76,7 @@ async function notifyDoctor(req, payload) {
         diagnosis,
         visual_findings,
         urgency_level,
+        consultationId,
     });
 }
 

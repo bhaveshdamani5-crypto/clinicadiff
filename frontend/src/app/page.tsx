@@ -130,6 +130,23 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ============ NAVIGATION HEADER ============ */}
+      <motion.header 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease: "easeOut" }}
+        className="fixed top-0 left-0 w-full z-50 px-6 py-6 pointer-events-none"
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="inline-flex items-center gap-3 bg-white/70 backdrop-blur-xl px-5 py-3 rounded-full border border-slate-200/60 shadow-[0_4px_20px_rgba(59,130,246,0.08)] pointer-events-auto hover:scale-105 transition-transform duration-300">
+            <img src="/logo.png" alt="ClinicaDiff Logo" className="w-7 h-7 object-contain drop-shadow-md" />
+            <p className="text-base font-black tracking-tighter text-slate-900">
+              Clinica<span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">Diff</span>
+            </p>
+          </div>
+        </div>
+      </motion.header>
+
       {/* ============ HERO SECTION ============ */}
       <section 
         className="relative min-h-screen flex flex-col items-center justify-center pt-20 px-6 z-10"
@@ -305,10 +322,10 @@ export default function Home() {
               className="mx-auto mb-6 h-[2px] w-16 bg-gradient-to-r from-blue-500 to-cyan-500"
             />
             <h2 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight">
-              Enterprise Medical Intelligence
+              Architecting the future of healthcare with <span className="text-blue-600 font-light">Neural Intelligence.</span>
             </h2>
-            <p className="text-slate-500 max-w-2xl mx-auto text-lg">
-              Harness the power of multi-advanced neural models. Seamlessly infer diseases, detect localized outbreaks, and analyze complex genomic data.
+            <p className="text-slate-500 max-w-2xl mx-auto text-lg font-medium">
+              Real-time diagnostics, drug interaction analysis, and community outbreak detection — all in one platform.
             </p>
           </motion.div>
 
@@ -317,7 +334,7 @@ export default function Home() {
               { title: "Neural Vision OCR", desc: "Instantly transcribe messy handwritten prescriptions into structured, analyzable data.", icon: Zap, color: "text-blue-600", bg: "bg-blue-50", border: "hover:border-blue-300" },
               { title: "Bio-Sync Inference", desc: "Predict probable medical conditions based on multi-symptom analysis and prescription history.", icon: Brain, color: "text-indigo-600", bg: "bg-indigo-50", border: "hover:border-indigo-300" },
               { title: "Drug Interaction Check", desc: "Real-time DDI validation to prevent adverse reactions and safeguard patient health.", icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-50", border: "hover:border-emerald-300" },
-              { title: "Hereditary Risk Engine", desc: "Calculate long-term genetic risks by analyzing patient family history and treatment data.", icon: Dna, color: "text-cyan-600", bg: "bg-cyan-50", border: "hover:border-cyan-300" },
+              { title: "Voice AI Copilot", desc: "Hands-free clinical dictation powered by real-time speech recognition and LLM structuring.", icon: Stethoscope, color: "text-cyan-600", bg: "bg-cyan-50", border: "hover:border-cyan-300" },
               { title: "Outbreak Detection", desc: "Cluster analysis of real-time regional symptom data to detect localized viral outbreaks.", icon: Network, color: "text-orange-600", bg: "bg-orange-50", border: "hover:border-orange-300" },
               { title: "Biometric Trust", desc: "Cryptographic validation of health records ensuring data is decentralized and tamper-proof.", icon: Fingerprint, color: "text-purple-600", bg: "bg-purple-50", border: "hover:border-purple-300" },
             ].map((feature, i) => (
